@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import com.example.walltra.ui.home.HomeScreen
 
 @Composable
 fun WalltraNavGraph(navController: NavHostController) {
@@ -13,7 +14,7 @@ fun WalltraNavGraph(navController: NavHostController) {
         startDestination = Screen.Home
     ) {
         composable<Screen.Home> {
-            // HomeScreen(navController)
+            HomeScreen(navController = navController)
         }
 
         composable<Screen.Day> { backStackEntry ->
