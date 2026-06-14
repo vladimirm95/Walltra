@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.walltra.ui.categories.CategoriesScreen
 import com.example.walltra.ui.compare.CompareScreen
 import com.example.walltra.ui.day.DayScreen
 import com.example.walltra.ui.home.HomeScreen
@@ -39,6 +40,10 @@ fun WalltraNavGraph(navController: NavHostController) {
 
         composable<Screen.Settings> {
             SettingsScreen(navController = navController)
+        }
+
+        composable<Screen.Categories> {
+            CategoriesScreen(navController = navController)
         }
     }
 }

@@ -1,6 +1,5 @@
 package com.example.walltra.ui.home
 
-
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.walltra.data.model.DefaultCategories
@@ -45,18 +44,15 @@ class HomeViewModel @Inject constructor(
     fun onIntent(intent: HomeIntent) {
         when (intent) {
             is HomeIntent.SelectDate -> selectDate(intent.date)
-            is HomeIntent.NavigateMonth -> navigateMonth(intent.forward)
+            is HomeIntent.SetMonth -> setMonth(intent.month)
             is HomeIntent.StartNewPeriod -> startNewPeriod()
             is HomeIntent.SavePeriod -> _state.update { it.copy(isLoading = false) }
             is HomeIntent.ConfirmSavePeriod -> confirmSavePeriod()
             is HomeIntent.DismissSavePeriod -> _state.update { it.copy(isLoading = false) }
             is HomeIntent.AddExpense -> addExpense(intent.name, intent.amount, intent.categoryId)
-            is HomeIntent.AddExpense -> addExpense(intent.name, intent.amount, intent.categoryId)
-            is HomeIntent.SeedMockData -> seedMockData() // TODO: privremeno - ukloni nakon testiranja
+            is HomeIntent.SeedMockData -> seedMockData()
         }
     }
-
-
 
     private fun initializeCategories() {
         viewModelScope.launch {
@@ -78,20 +74,12 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-
     private fun selectDate(date: LocalDate) {
         _state.update { it.copy(selectedDate = date) }
     }
 
-    private fun navigateMonth(forward: Boolean) {
-        _state.update {
-            val newMonth = if (forward) {
-                it.currentMonth.plusMonths(1)
-            } else {
-                it.currentMonth.minusMonths(1)
-            }
-            it.copy(currentMonth = newMonth)
-        }
+    private fun setMonth(month: LocalDate) {
+        _state.update { it.copy(currentMonth = month) }
     }
 
     private fun observeData() {
@@ -172,6 +160,7 @@ class HomeViewModel @Inject constructor(
             }
         }
     }
+
     // TODO: privremeno - ukloni nakon testiranja
     private fun seedMockData() {
         viewModelScope.launch {
@@ -182,7 +171,6 @@ class HomeViewModel @Inject constructor(
 
                 if (categories.isEmpty()) return@launch
 
-                // Troškovi za prethodnih 40 dana, 0-3 po danu
                 for (daysAgo in 0..40) {
                     val date = today.minusDays(daysAgo.toLong())
                     repeat(random.nextInt(0, 4)) {
@@ -199,7 +187,6 @@ class HomeViewModel @Inject constructor(
                     }
                 }
 
-                // Dva zatvorena perioda za testiranje Periodi/Poređenje ekrana
                 periodRepository.insert(
                     Period(
                         id = UUID.randomUUID().toString(),

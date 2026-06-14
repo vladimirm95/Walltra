@@ -8,4 +8,5 @@ interface CategoryRepository {
     suspend fun getCategoryById(id: String): Category?
     suspend fun insert(category: Category)
     suspend fun insertAll(categories: List<Category>)
+    suspend fun delete(category: Category)
 }

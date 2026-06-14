@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import androidx.room.Delete
+import com.example.walltra.data.model.CategoryTotal
 import com.example.walltra.data.model.Expense
 import kotlinx.coroutines.flow.Flow
 
@@ -36,4 +37,10 @@ interface ExpenseDao {
         startDate: String,
         endDate: String
     ): Flow<List<Expense>>
+
+    @Query("SELECT COUNT(*) FROM expenses WHERE categoryId = :categoryId")
+    suspend fun countByCategory(categoryId: String): Int
+
+    @Query("SELECT categoryId, SUM(amount) as total FROM expenses GROUP BY categoryId")
+    fun getTotalsByCategory(): Flow<List<CategoryTotal>>
 }

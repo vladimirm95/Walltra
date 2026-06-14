@@ -1,5 +1,6 @@
 package com.example.walltra.data.repository
 
+import com.example.walltra.data.model.CategoryTotal
 import com.example.walltra.data.model.Expense
 import kotlinx.coroutines.flow.Flow
 
@@ -12,7 +13,9 @@ interface ExpenseRepository {
         startDate: String,
         endDate: String
     ): Flow<List<Expense>>
+    fun getTotalsByCategory(): Flow<List<CategoryTotal>>
     suspend fun insert(expense: Expense)
     suspend fun update(expense: Expense)
     suspend fun delete(expense: Expense)
+    suspend fun countByCategory(categoryId: String): Int
 }

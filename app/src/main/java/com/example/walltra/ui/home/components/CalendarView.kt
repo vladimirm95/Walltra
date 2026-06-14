@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -18,6 +20,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,11 +31,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
+
+private val anchorMonth = YearMonth.of(1990, 1)
+private const val PAGE_COUNT = 2400
+
+private fun monthToPage(month: LocalDate): Int {
+    val ym = YearMonth.of(month.year, month.month)
+    return (ym.year - anchorMonth.year) * 12 + (ym.monthValue - anchorMonth.monthValue)
+}
+
+private fun pageToMonth(page: Int): LocalDate {
+    return anchorMonth.plusMonths(page.toLong()).atDay(1)
+}
 
 @Composable
 fun CalendarView(
@@ -40,16 +57,33 @@ fun CalendarView(
     periodStartDate: LocalDate?,
     totalAmountByDate: Map<String, Double>,
     onDayClick: (LocalDate) -> Unit,
-    onPreviousMonth: () -> Unit,
-    onNextMonth: () -> Unit,
+    onMonthChange: (LocalDate) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-    val yearMonth = YearMonth.of(currentMonth.year, currentMonth.month)
-    val daysInMonth = yearMonth.lengthOfMonth()
-    val firstDayOfWeek = yearMonth.atDay(1).dayOfWeek.value % 7
-    val maxAmount = totalAmountByDate.values.maxOrNull() ?: 1.0
     val dayNames = listOf("Ne", "Po", "Ut", "Sr", "Če", "Pe", "Su")
+    val maxAmount = totalAmountByDate.values.maxOrNull() ?: 1.0
+    val coroutineScope = rememberCoroutineScope()
+
+    val pagerState = rememberPagerState(
+        initialPage = monthToPage(currentMonth),
+        pageCount = { PAGE_COUNT }
+    )
+
+    // Mesec promenjen spolja (npr. inicijalno postavljanje) -> pomeri pager
+    LaunchedEffect(currentMonth) {
+        val targetPage = monthToPage(currentMonth)
+        if (pagerState.currentPage != targetPage) {
+            pagerState.animateScrollToPage(targetPage)
+        }
+    }
+
+    // Korisnik prevukao pager -> javi ViewModel-u novi mesec
+    LaunchedEffect(pagerState.currentPage) {
+        val newMonth = pageToMonth(pagerState.currentPage)
+        if (newMonth != currentMonth) {
+            onMonthChange(newMonth)
+        }
+    }
 
     Column(modifier = modifier.fillMaxWidth()) {
         // Header — naziv meseca i navigacija
@@ -58,7 +92,11 @@ fun CalendarView(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            IconButton(onClick = onPreviousMonth) {
+            IconButton(onClick = {
+                coroutineScope.launch {
+                    pagerState.animateScrollToPage(pagerState.currentPage - 1)
+                }
+            }) {
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Prethodni mesec")
             }
             Text(
@@ -66,7 +104,11 @@ fun CalendarView(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
-            IconButton(onClick = onNextMonth) {
+            IconButton(onClick = {
+                coroutineScope.launch {
+                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                }
+            }) {
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Sledeći mesec")
             }
         }
@@ -84,10 +126,43 @@ fun CalendarView(
             }
         }
 
-        // Dani u mesecu
-        val totalCells = firstDayOfWeek + daysInMonth
-        val rows = (totalCells + 6) / 7
+        // Mreža dana - swipe između meseci
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) { page ->
+            CalendarGrid(
+                month = pageToMonth(page),
+                selectedDate = selectedDate,
+                periodStartDate = periodStartDate,
+                totalAmountByDate = totalAmountByDate,
+                maxAmount = maxAmount,
+                onDayClick = onDayClick
+            )
+        }
+    }
+}
 
+@Composable
+private fun CalendarGrid(
+    month: LocalDate,
+    selectedDate: LocalDate,
+    periodStartDate: LocalDate?,
+    totalAmountByDate: Map<String, Double>,
+    maxAmount: Double,
+    onDayClick: (LocalDate) -> Unit
+) {
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    val yearMonth = YearMonth.of(month.year, month.month)
+    val daysInMonth = yearMonth.lengthOfMonth()
+    val firstDayOfWeek = yearMonth.atDay(1).dayOfWeek.value % 7
+
+    val totalCells = firstDayOfWeek + daysInMonth
+    val rows = (totalCells + 6) / 7
+
+    Column(modifier = Modifier.fillMaxWidth()) {
         for (row in 0 until rows) {
             Row(modifier = Modifier.fillMaxWidth()) {
                 for (col in 0 until 7) {

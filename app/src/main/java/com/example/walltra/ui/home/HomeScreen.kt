@@ -296,11 +296,8 @@ fun HomeScreen(
                         viewModel.onIntent(HomeIntent.SelectDate(date))
                         navController.navigate(Screen.Day(date.format(formatter)))
                     },
-                    onPreviousMonth = {
-                        viewModel.onIntent(HomeIntent.NavigateMonth(false))
-                    },
-                    onNextMonth = {
-                        viewModel.onIntent(HomeIntent.NavigateMonth(true))
+                    onMonthChange = { month ->
+                        viewModel.onIntent(HomeIntent.SetMonth(month))
                     }
                 )
 

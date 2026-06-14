@@ -4,7 +4,7 @@ import java.time.LocalDate
 
 sealed class HomeIntent {
     data class SelectDate(val date: LocalDate) : HomeIntent()
-    data class NavigateMonth(val forward: Boolean) : HomeIntent()
+    data class SetMonth(val month: LocalDate) : HomeIntent()
     data object StartNewPeriod : HomeIntent()
     data object SavePeriod : HomeIntent()
     data object ConfirmSavePeriod : HomeIntent()

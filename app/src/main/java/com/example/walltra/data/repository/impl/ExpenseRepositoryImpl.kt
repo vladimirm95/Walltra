@@ -1,6 +1,7 @@
 package com.example.walltra.data.repository.impl
 
 import com.example.walltra.data.local.dao.ExpenseDao
+import com.example.walltra.data.model.CategoryTotal
 import com.example.walltra.data.model.Expense
 import com.example.walltra.data.repository.ExpenseRepository
 import kotlinx.coroutines.flow.Flow
@@ -30,6 +31,10 @@ class ExpenseRepositoryImpl @Inject constructor(
         return expenseDao.getExpensesByCategoryAndDateRange(categoryId, startDate, endDate)
     }
 
+    override fun getTotalsByCategory(): Flow<List<CategoryTotal>> {
+        return expenseDao.getTotalsByCategory()
+    }
+
     override suspend fun insert(expense: Expense) {
         expenseDao.insert(expense)
     }
@@ -40,5 +45,9 @@ class ExpenseRepositoryImpl @Inject constructor(
 
     override suspend fun delete(expense: Expense) {
         expenseDao.delete(expense)
+    }
+
+    override suspend fun countByCategory(categoryId: String): Int {
+        return expenseDao.countByCategory(categoryId)
     }
 }
