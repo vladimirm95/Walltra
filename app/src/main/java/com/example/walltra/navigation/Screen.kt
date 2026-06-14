@@ -14,5 +14,11 @@ sealed class Screen {
     data object Periods : Screen()
 
     @Serializable
+    data class PeriodDetail(val periodId: String) : Screen()
+
+    @Serializable
     data object Compare : Screen()
+
+    @Serializable
+    data object Settings : Screen()
 }

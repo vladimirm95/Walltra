@@ -1,8 +1,10 @@
 package com.example.walltra.ui.home
 
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.walltra.data.model.DefaultCategories
+import com.example.walltra.data.model.Expense
 import com.example.walltra.data.model.Period
 import com.example.walltra.data.repository.CategoryRepository
 import com.example.walltra.data.repository.ExpenseRepository
@@ -13,12 +15,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.random.Random
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
@@ -46,8 +50,13 @@ class HomeViewModel @Inject constructor(
             is HomeIntent.SavePeriod -> _state.update { it.copy(isLoading = false) }
             is HomeIntent.ConfirmSavePeriod -> confirmSavePeriod()
             is HomeIntent.DismissSavePeriod -> _state.update { it.copy(isLoading = false) }
+            is HomeIntent.AddExpense -> addExpense(intent.name, intent.amount, intent.categoryId)
+            is HomeIntent.AddExpense -> addExpense(intent.name, intent.amount, intent.categoryId)
+            is HomeIntent.SeedMockData -> seedMockData() // TODO: privremeno - ukloni nakon testiranja
         }
     }
+
+
 
     private fun initializeCategories() {
         viewModelScope.launch {
@@ -68,6 +77,7 @@ class HomeViewModel @Inject constructor(
             )
         }
     }
+
 
     private fun selectDate(date: LocalDate) {
         _state.update { it.copy(selectedDate = date) }
@@ -129,6 +139,83 @@ class HomeViewModel @Inject constructor(
                 _state.update { it.copy(isLoading = false) }
             } catch (e: Exception) {
                 _state.update { it.copy(error = e.message, isLoading = false) }
+            }
+        }
+    }
+
+    private fun addExpense(name: String, amount: Double, categoryId: String) {
+        viewModelScope.launch {
+            try {
+                val normalizedName = name.trim()
+                val dateString = _state.value.selectedDate.format(formatter)
+
+                val existing = _state.value.expenses.find {
+                    it.name.trim().equals(normalizedName, ignoreCase = true) &&
+                            it.categoryId == categoryId &&
+                            it.date == dateString
+                }
+
+                if (existing != null) {
+                    expenseRepository.update(existing.copy(amount = existing.amount + amount))
+                } else {
+                    val expense = Expense(
+                        id = UUID.randomUUID().toString(),
+                        categoryId = categoryId,
+                        name = normalizedName,
+                        amount = amount,
+                        date = dateString
+                    )
+                    expenseRepository.insert(expense)
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(error = e.message) }
+            }
+        }
+    }
+    // TODO: privremeno - ukloni nakon testiranja
+    private fun seedMockData() {
+        viewModelScope.launch {
+            try {
+                val today = LocalDate.now()
+                val random = Random(System.currentTimeMillis())
+                val categories = categoryRepository.getAllCategories().first()
+
+                if (categories.isEmpty()) return@launch
+
+                // Troškovi za prethodnih 40 dana, 0-3 po danu
+                for (daysAgo in 0..40) {
+                    val date = today.minusDays(daysAgo.toLong())
+                    repeat(random.nextInt(0, 4)) {
+                        val category = categories.random(random)
+                        expenseRepository.insert(
+                            Expense(
+                                id = UUID.randomUUID().toString(),
+                                categoryId = category.id,
+                                name = "Test - ${category.name}",
+                                amount = random.nextInt(100, 3000).toDouble(),
+                                date = date.format(formatter)
+                            )
+                        )
+                    }
+                }
+
+                // Dva zatvorena perioda za testiranje Periodi/Poređenje ekrana
+                periodRepository.insert(
+                    Period(
+                        id = UUID.randomUUID().toString(),
+                        startDate = today.minusDays(40).format(formatter),
+                        endDate = today.minusDays(21).format(formatter)
+                    )
+                )
+                periodRepository.insert(
+                    Period(
+                        id = UUID.randomUUID().toString(),
+                        startDate = today.minusDays(20).format(formatter),
+                        endDate = today.minusDays(1).format(formatter)
+                    )
+                )
+            } catch (e: Exception) {
+                _state.update { it.copy(error = e.message) }
             }
         }
     }

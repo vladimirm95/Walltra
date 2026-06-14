@@ -9,4 +9,6 @@ sealed class HomeIntent {
     data object SavePeriod : HomeIntent()
     data object ConfirmSavePeriod : HomeIntent()
     data object DismissSavePeriod : HomeIntent()
+    data class AddExpense(val name: String, val amount: Double, val categoryId: String) : HomeIntent()
+    data object SeedMockData : HomeIntent() // TODO: privremeno - ukloni nakon testiranja
 }
